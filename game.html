@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <!-- viewport مهم است برای اینکه صفحه در موبایل درست نمایش داده شود و اسکرول نشود -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>2048 Liquid Glass - Persian Mobile Optimized</title>
+  <style>
+    :root{
+      --bg1:#08111f;
+      --bg2:#0b1d2f;
+      --bg3:#10263f;
+      --glass: rgba(255,255,255,.10);
+      --glass-strong: rgba(255,255,255,.16);
+      --stroke: rgba(255,255,255,.18);
+      --stroke-strong: rgba(255,255,255,.28);
+      --text: #eef6ff;
+      --muted: rgba(238,246,255,.72);
+      /* Shadow for app content */
+      --shadow: 0 24px 80px rgba(0,0,0,.35);
+      --shadow-soft: 0 10px 30px rgba(0,0,0,.18);
+      --gap: 14px;
+      --tile-radius: 20px;
+    }
+
+    [data-theme="light"]{
+      --bg1:#e8f3ff;
+      --bg2:#dcecff;
+      --bg3:#cfe0ff;
+      --glass: rgba(255,255,255,.42);
+      --glass-strong: rgba(255,255,255,.60);
+      --stroke: rgba(30,60,90,.12);
+      --stroke-strong: rgba(30,60,90,.18);
+      --text: #0f172a;
+      --muted: rgba(15,23,42,.68);
+      --shadow: 0 24px 80px rgba(25,40,70,.18);
+      --shadow-soft: 0 10px 30px rgba(25,40,70,.12);
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%; overflow:hidden;} /* Prevent body scroll */
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Tahoma, sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(circle at 18% 18%, rgba(125,211,252,.28), transparent 28%),
+        radial-gradient(circle at 82% 14%, rgba(167,139,250,.26), transparent 24%),
+        radial-gradient(circle at 50% 88%, rgba(52,211,153,.18), transparent 30%),
+        linear-gradient(145deg, var(--bg1), var(--bg2) 46%, var(--bg3));
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:18px; /* Padding for the whole viewport */
+    }
+
+    .particles{
+      position:fixed; inset:0; pointer-events:none; overflow:hidden; z-index:0;
+    }
+    .particle{
+      position:absolute; border-radius:50%;
+      background:rgba(255,255,255,.16);
+      filter: blur(1px);
+      animation: float 14s linear infinite;
+    }
+    @keyframes float{
+      from{transform:translateY(0) translateX(0) scale(1); opacity:0}
+      10%{opacity:.8}
+      50%{opacity:.35}
+      100%{transform:translateY(-120vh) translateX(40px) scale(1.4); opacity:0}
+    }
+
+    /* Main app container - THIS is what scrolls */
+    .app{
+      position:relative; z-index:1;
+      width:min(94vw, 560px);
+      padding:22px;
+      border-radius:34px;
+      background:var(--glass);
+      border:1px solid var(--stroke);
+      box-shadow:var(--shadow);
+      backdrop-filter: blur(22px) saturate(160%);
+      -webkit-backdrop-filter: blur(22px) saturate(160%);
+      display: flex;
+      flex-direction: column;
+      height: 90vh; /* Limit height to prevent excessive scrolling */
+      overflow-y: auto; /* Enable vertical scroll ONLY for this app container */
+      overflow-x: hidden; /* Prevent horizontal scroll */
+      scroll-behavior: smooth; /* Smooth scrolling for internal scroll */
+    }
+
+    .topbar{
+      flex-shrink: 0; /* Prevent shrinking */
+      display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between;
+      margin-bottom:18px;
+    }
+
+    .title-wrap h1{
+      margin:0;
+      font-size:clamp(28px, 5vw, 40px);
+      letter-spacing:-0.03em;
+      line-height:1.05;
+    }
+    .title-wrap p{
+      margin:8px 0 0; color:var(--muted); font-size:14px;
+    }
+
+    .score-grid{
+      display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end;
+    }
+
+    .scorebox{
+      min-width:92px;
+      padding:12px 14px;
+      border-radius:18px;
+      background:var(--glass-strong);
+      border:1px solid var(--stroke);
+      box-shadow:var(--shadow-soft);
+      backdrop-filter: blur(16px) saturate(150%);
+      -webkit-backdrop-filter: blur(16px) saturate(150%);
+      text-align:center;
+    }
+    .scorebox .label{
+      font-size:11px; letter-spacing:.08em; color:var(--muted); margin-bottom:4px;
+    }
+    .scorebox .value{ font-size:20px; font-weight:800; }
+
+    .controls{
+      flex-shrink: 0; /* Prevent shrinking */
+      display:flex; flex-wrap:wrap; gap:10px; margin:12px 0 16px;
+      justify-content: center; /* Center buttons more effectively */
+    }
+
+    button{
+      border:none; cursor:pointer; color:var(--text);
+      background:var(--glass-strong);
+      border:1px solid var(--stroke);
+      border-radius:16px;
+      padding:11px 14px;
+      font:inherit; font-weight:700;
+      box-shadow:var(--shadow-soft);
+      backdrop-filter: blur(18px) saturate(150%);
+      -webkit-backdrop-filter: blur(18px) saturate(150%);
+      transition: transform .18s ease, background .18s ease, border-color .18s ease, box-shadow .18s ease;
+      user-select:none;
+    }
+    button:hover{ transform: translateY(-1px); border-color:var(--stroke-strong); }
+    button:active{ transform: translateY(1px) scale(.99); }
+    button.primary{ background: linear-gradient(135deg, rgba(125,211,252,.34), rgba(167,139,250,.30)); }
+    button.good{ background: rgba(52,211,153,.22); }
+    button.danger{ background: rgba(251,113,133,.18); }
+
+    .board-wrap{
+      flex-grow: 1; /* Allow board to take available space */
+      position:relative;
+      padding:18px;
+      border-radius:30px;
+      background:rgba(255,255,255,.08);
+      border:1px solid var(--stroke);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.10), var(--shadow); /* Inner shadow for depth */
+      backdrop-filter: blur(20px) saturate(160%);
+      -webkit-backdrop-filter: blur(20px) saturate(160%);
+      touch-action:none; /* Crucial for mobile touch events */
+      margin-bottom: 18px; /* Add margin below board */
+      display: flex; /* Use flex to center board if needed */
+      align-items: center;
+      justify-content: center;
+    }
+
+    .board{
+      position:relative;
+      width:min(100%, 480px);
+      aspect-ratio:1;
+      border-radius:24px;
+      background:rgba(255,255,255,.06);
+      overflow:hidden; /* Ensure tiles stay within board */
+    }
+
+    .grid{
+      position:absolute;
+      inset:0;
+      display:grid;
+      grid-template-columns:repeat(4, 1fr);
+      gap:var(--gap);
+      padding:var(--gap);
+    }
+
+    .cell{
+      border-radius:20px;
+      background:rgba(255,255,255,.10);
+      border:1px solid rgba(255,255,255,.07);
+    }
+
+    .tiles{
+      position:absolute;
+      inset:0;
+      pointer-events:none; /* Tiles shouldn't block touches */
+    }
+
+    .tile{
+      position:absolute;
+      width:calc((100% - (var(--gap) * 5)) / 4); /* Base width calculation */
+      height:calc((100% - (var(--gap) * 5)) / 4); /* Base height calculation */
+      border-radius:var(--tile-radius);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:clamp(22px, 5vw, 38px);
+      font-weight:900;
+      color:#fff;
+      text-shadow:0 2px 10px rgba(0,0,0,.25);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.22), 0 10px 24px rgba(0,0,0,.18);
+      border:1px solid rgba(255,255,255,.14);
+      transition: transform .14s cubic-bezier(.2,.8,.2,1), opacity .14s ease, filter .14s ease;
+      backdrop-filter: blur(10px) saturate(140%);
+      -webkit-backdrop-filter: blur(10px) saturate(140%);
+      will-change: transform; /* Performance optimization */
+    }
+
+    /* Animations - these should be applied via JS */
+    .tile.spawn{ animation: spawn .16s ease-out forwards; }
+    .tile.merge{ animation: merge .18s ease-out forwards; }
+
+    @keyframes spawn{
+      from{ transform:scale(.55); opacity:.2; filter:blur(2px); }
+      to{ transform:scale(1); opacity:1; filter:blur(0); }
+    }
+    @keyframes merge{
+      0%{ transform:scale(1); }
+      50%{ transform:scale(1.12); }
+      100%{ transform:scale(1); }
+    }
+
+    /* Tile value backgrounds */
+    .tile[data-value="2"]{ background: linear-gradient(135deg, rgba(125,211,252,.55), rgba(59,130,246,.48)); }
+    .tile[data-value="4"]{ background: linear-gradient(135deg, rgba(52,211,153,.52), rgba(16,185,129,.46)); }
+    .tile[data-value="8"]{ background: linear-gradient(135deg, rgba(251,191,36,.56), rgba(245,158,11,.48)); }
+    .tile[data-value="16"]{ background: linear-gradient(135deg, rgba(251,113,133,.58), rgba(244,63,94,.50)); }
+    .tile[data-value="32"]{ background: linear-gradient(135deg, rgba(167,139,250,.60), rgba(139,92,246,.50)); }
+    .tile[data-value="64"]{ background: linear-gradient(135deg, rgba(96,165,250,.62), rgba(37,99,235,.52)); }
+    .tile[data-value="128"]{ background: linear-gradient(135deg, rgba(45,212,191,.64), rgba(20,184,166,.54)); font-size:clamp(18px,4vw,30px); }
+    .tile[data-value="256"]{ background: linear-gradient(135deg, rgba(250,204,21,.70), rgba(234,179,8,.56)); font-size:clamp(18px,4vw,30px); }
+    .tile[data-value="512"]{ background: linear-gradient(135deg, rgba(248,113,113,.70), rgba(239,68,68,.56)); font-size:clamp(18px,4vw,30px); }
+    .tile[data-value="1024"]{ background: linear-gradient(135deg, rgba(196,181,253,.76), rgba(168,85,247,.60)); font-size:clamp(16px,3.6vw,26px); }
+    .tile[data-value="2048"]{ background: linear-gradient(135deg, rgba(255,255,255,.92), rgba(125,211,252,.72)); color:#08111f; font-size:clamp(16px,3.6vw,26px); }
+
+    /* Footer info and panels */
+    .hint{
+      flex-shrink: 0; /* Prevent shrinking */
+      margin-top:16px; color:var(--muted); font-size:14px; line-height:1.8;
+    }
+
+    .panel{
+      flex-shrink: 0; /* Prevent shrinking */
+      margin-top:14px;
+      padding:14px 16px;
+      border-radius:20px;
+      background:rgba(255,255,255,.08);
+      border:1px solid var(--stroke);
+      backdrop-filter: blur(18px) saturate(150%);
+      -webkit-backdrop-filter: blur(18px) saturate(150%);
+    }
+
+    .panel h2{ font-size:16px; margin:0 0 8px; }
+    .panel ul{
+      margin:0; padding-inline-start:22px;
+      color:var(--muted); line-height:1.9; font-size:14px;
+    }
+
+    /* Overlays and Modals */
+    .overlay{
+      position:fixed; inset:0;
+      background:rgba(4,10,20,.55);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+      z-index:20;
+    }
+    .overlay.show{ display:flex; }
+
+    .modal{
+      width:min(92vw, 640px);
+      max-height:88vh;
+      overflow-y: auto; /* Allow modal to scroll if content is too tall */
+      border-radius:28px;
+      padding:22px;
+      background:rgba(255,255,255,.12);
+      border:1px solid rgba(255,255,255,.20);
+      box-shadow:var(--shadow);
+      backdrop-filter: blur(24px) saturate(160%);
+      -webkit-backdrop-filter: blur(24px) saturate(160%);
+    }
+
+    .modal h3{ margin:0 0 12px; font-size:24px; }
+    .modal p, .modal li{ color:var(--muted); line-height:1.9; }
+
+    .switch{
+      display:flex; align-items:center; justify-content:space-between; gap:14px;
+      padding:12px 14px;
+      border-radius:16px;
+      background:rgba(255,255,255,.08);
+      border:1px solid var(--stroke);
+      margin-bottom:10px;
+    }
+    .switch span{ font-weight:700; }
+
+    .row{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-top:14px;
+      justify-content:center;
+    }
+    .row button{
+      flex-grow: 1;
+      flex-basis: 0;
+      min-width: 120px;
+    }
+
+    /* Mobile Optimizations */
+    @media (max-width: 768px) {
+      :root{ --gap: 11px; }
+      .app{ padding:16px; border-radius:28px; height: 88vh; } /* Slightly smaller for mobile */
+      .board-wrap{ padding:14px; border-radius:26px; margin-bottom: 16px; }
+      .scorebox{ min-width:80px; padding:10px 12px; }
+      .scorebox .value{ font-size:18px; }
+
+      .title-wrap h1{ font-size:clamp(24px, 6vw, 34px); }
+      .title-wrap p{ font-size:12px; }
+
+      .controls {
+        flex-direction: row;
+        justify-content: center;
+      }
+      .controls button {
+        flex-basis: calc(50% - 8px); /* Two buttons per row */
+        padding: 10px 12px;
+        font-size: 14px;
+      }
+      .row button{ /* Modal buttons adjustments */
+        flex-basis: auto;
+        min-width: 120px;
+      }
+
+      .board{ border-radius:20px; }
+      .cell, .tile{ border-radius:16px; }
+      .tile{ font-size: clamp(18px, 5vw, 30px); }
+      .tile[data-value="128"], .tile[data-value="256"], .tile[data-value="512"]{ font-size: clamp(16px, 4.5vw, 26px); }
+      .tile[data-value="1024"], .tile[data-value="2048"]{ font-size: clamp(14px, 4vw, 22px); }
+
+      .hint{ font-size:13px; }
+      .panel{ padding:12px 14px; border-radius:16px; }
+      .panel ul{ font-size:13px; }
+
+      .modal{ padding:18px; border-radius:22px; }
+      .modal h3{ font-size:22px; }
+      .modal p, .modal li{ font-size:13px; }
+      .switch{ padding:10px 12px; border-radius:14px; }
+    }
+
+    @media (max-width: 375px) { /* Even smaller phones */
+      .controls button {
+        flex-basis: calc(100% - 8px); /* Single button per row */
+      }
+      .scorebox{
+        min-width: 75px;
+        padding: 8px 10px;
+      }
+      .scorebox .value{ font-size: 16px; }
+    }
+
+  </style>
+</head>
+<body>
+  <div class="particles" id="particles"></div>
+
+  <!-- The main application container that now scrolls internally -->
+  <main class="app" id="app">
+    <div class="topbar">
+      <div class="title-wrap">
+        <h1>2048</h1>
+        <p>نسخه 1.2 ادغام اعداد میتوانید راهنما را بخوانید</p>
+      </div>
+
+      <div class="score-grid">
+        <div class="scorebox"><div class="label">امتیاز</div><div class="value" id="score">0</div></div>
+        <div class="scorebox"><div class="label">بهترین</div><div class="value" id="best">0</div></div>
+        <div class="scorebox"><div class="label">حرکت</div><div class="value" id="moves">0</div></div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button id="undoBtn">بازگشت</button>
+      <button class="good" id="helpBtn">راهنما</button>
+      <button class="primary" id="restartBtn">شروع مجدد</button>
+      <button id="settingsBtn">تنظیمات</button>
+    </div>
+
+    <div class="board-wrap">
+      <div class="board" id="board">
+        <div class="grid" id="grid"></div>
+        <div class="tiles" id="tiles"></div>
+      </div>
+    </div>
+
+    <div class="hint">
+      با <strong>کلیدهای جهت‌نما</strong> یا <strong>WASD</strong> بازی کن. روی موبایل با <strong>کشیدن انگشت</strong> کار می‌کند.
+    </div>
+
+    <div class="panel">
+      <h2>ویژگی‌ها</h2>
+      <ul>
+        <li>حرکت و ادغام انیمیشنی</li>
+        <li>ذخیره‌ی بهترین امتیاز</li>
+        <li>Undo</li>
+        <li>تم روشن/تیره</li>
+        <li>صداهای سبک</li>
+        <h4>" POWER BY KZAE "</h4>
+      </ul>
+    </div>
+  </main>
+
+  <!-- Modals (Help and Settings) -->
+  <div class="overlay" id="helpOverlay">
+    <div class="modal">
+      <h3>راهنمای بازی</h3>
+      <p>هدف این است که کاشی‌های هم‌عدد را ترکیب کنی تا به 2048 برسی.</p>
+      <ul>
+        <li>Arrow Keys یا WASD: حرکت</li>
+        <li>Swipe: برای موبایل</li>
+        <li>Undo: برگشت به حرکت قبل</li>
+        <li>Restart: شروع دوباره</li>
+      </ul>
+      <div class="row">
+        <button class="primary" id="closeHelpBtn">متوجه شدم</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="settingsOverlay">
+    <div class="modal">
+      <h3>تنظیمات</h3>
+      <div class="switch"><span>تم</span><button id="themeToggle">تغییر</button></div>
+      <div class="switch"><span>صدا</span><button id="soundToggle">روشن</button></div>
+      <div class="switch"><span>نمایش راهنما هنگام شروع</span><button id="showHelpToggle">فعال</button></div>
+      <div class="row">
+        <button class="primary" id="closeSettingsBtn">بستن</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Area -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const SIZE = 4;
+    const STORAGE_KEY = "liquidGlass2048_fa_v2_mobile";
+    const BEST_KEY = "liquidGlass2048_best_v2";
+    const SETTINGS_KEY = "liquidGlass2048_settings_v2";
+
+    const scoreEl = document.getElementById("score");
+    const bestEl = document.getElementById("best");
+    const movesEl = document.getElementById("moves");
+    const gridEl = document.getElementById("grid");
+    const tilesEl = document.getElementById("tiles");
+    const boardEl = document.getElementById("board");
+    const appEl = document.getElementById("app"); // Get the app element
+    const toastEl = document.getElementById("toast");
+
+    const helpOverlay = document.getElementById("helpOverlay");
+    const settingsOverlay = document.getElementById("settingsOverlay");
+
+    const restartBtn = document.getElementById("restartBtn");
+    const undoBtn = document.getElementById("undoBtn");
+    const helpBtn = document.getElementById("helpBtn");
+    const settingsBtn = document.getElementById("settingsBtn");
+    const closeHelpBtn = document.getElementById("closeHelpBtn");
+    const closeSettingsBtn = document.getElementById("closeSettingsBtn");
+    const themeToggle = document.getElementById("themeToggle");
+    const soundToggle = document.getElementById("soundToggle");
+    const showHelpToggle = document.getElementById("showHelpToggle");
+
+    let tiles = [];
+    let nextId = 1;
+    let score = 0;
+    let best = Number(localStorage.getItem(BEST_KEY) || 0);
+    let moves = 0;
+    let history = [];
+    let settings = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}");
+    settings.theme = settings.theme || "dark";
+    settings.sound = settings.sound ?? true;
+    settings.showHelpOnStart = settings.showHelpOnStart ?? true;
+
+    document.documentElement.setAttribute("data-theme", settings.theme);
+    bestEl.textContent = best;
+    updateSettingsUI();
+
+    function showToast(msg){
+      toastEl.textContent = msg;
+      toastEl.classList.add("show");
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(() => toastEl.classList.remove("show"), 1400);
+    }
+
+    function saveSettings(){
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+      document.documentElement.setAttribute("data-theme", settings.theme);
+      updateSettingsUI();
+    }
+
+    function updateSettingsUI(){
+      themeToggle.textContent = settings.theme === "dark" ? "تاریک" : "روشن";
+      soundToggle.textContent = settings.sound ? "روشن" : "خاموش";
+      showHelpToggle.textContent = settings.showHelpOnStart ? "فعال" : "غیرفعال";
+    }
+
+    function playTone(freq=440, duration=0.06, type="sine"){
+      if(!settings.sound) return;
+      try{
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if(!AudioCtx) return;
+        const ctx = playTone.ctx || (playTone.ctx = new AudioCtx());
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = type;
+        o.frequency.value = freq;
+        g.gain.value = 0.03;
+        o.connect(g);
+        g.connect(ctx.destination);
+        o.start();
+        o.stop(ctx.currentTime + duration);
+      }catch(e){}
+    }
+
+    function cloneTiles(arr){
+      return arr.map(t => t ? {...t} : null);
+    }
+
+    function emptyTiles(){
+      return Array.from({length: SIZE * SIZE}, () => null);
+    }
+
+    function index(r,c){ return r * SIZE + c; }
+
+    function randEmptyIndex(){
+      const empty = [];
+      for(let i=0;i<tiles.length;i++) if(!tiles[i]) empty.push(i);
+      if(!empty.length) return -1;
+      return empty[Math.floor(Math.random() * empty.length)];
+    }
+
+    function addRandomTile(){
+      const i = randEmptyIndex();
+      if(i === -1) return false;
+      tiles[i] = {
+        id: nextId++,
+        value: Math.random() < 0.9 ? 2 : 4,
+        mergedFrom: null,
+        justSpawned: true // Flag for spawn animation
+      };
+      return true;
+    }
+
+    function setInitialGame(){
+      tiles = emptyTiles();
+      score = 0;
+      moves = 0;
+      history = [];
+      nextId = 1;
+      addRandomTile();
+      addRandomTile();
+      saveGame();
+      render(true);
+    }
+
+    function saveGame(){
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ tiles, score, moves, history, nextId }));
+      if(score > best){
+        best = score;
+        localStorage.setItem(BEST_KEY, best);
+        bestEl.textContent = best;
+      }
+    }
+
+    function loadGame(){
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if(!saved){
+        setInitialGame();
+        return;
+      }
+      try{
+        const data = JSON.parse(saved);
+        tiles = data.tiles || emptyTiles();
+        score = data.score || 0;
+        moves = data.moves || 0;
+        history = data.history || [];
+        nextId = data.nextId || 1;
+        render(true); // Render with first flag to ensure initial animations
+      }catch(e){
+        console.error("Failed to load game:", e);
+        setInitialGame();
+      }
+    }
+
+    function render(first=false){
+      gridEl.innerHTML = ""; // Clear previous grid cells if any (shouldn't happen often)
+      for(let i=0;i<SIZE*SIZE;i++){
+        const cell = document.createElement("div");
+        cell.className = "cell";
+        gridEl.appendChild(cell);
+      }
+
+      tilesEl.innerHTML = ""; // Clear previous tiles
+      scoreEl.textContent = score;
+      bestEl.textContent = best;
+      movesEl.textContent = moves;
+
+      const gap = parseInt(getComputedStyle(document.documentElement).getPropertyValue("--gap")) || 14;
+      const cellSize = `calc((100% - ${(SIZE + 1)} * var(--gap)) / ${SIZE})`;
+
+      tiles.forEach((tile, i) => {
+        if(!tile) return;
+        const r = Math.floor(i / SIZE);
+        const c = i % SIZE;
+        const el = document.createElement("div");
+        el.className = "tile";
+        el.dataset.value = tile.value;
+        el.textContent = tile.value;
+        el.style.width = cellSize;
+        el.style.height = cellSize;
+        el.style.left = `calc(var(--gap) + ${c} * ((${cellSize}) + var(--gap)))`;
+        el.style.top = `calc(var(--gap) + ${r} * ((${cellSize}) + var(--gap)))`;
+
+        // Apply animations based on flags
+        if(tile.justSpawned || first) el.classList.add("spawn");
+        // Check if tile was part of a merge in the previous state
+        if(tile.mergedFrom) el.classList.add("merge");
+
+        tilesEl.appendChild(el);
+
+        // Reset flags after rendering to avoid re-animation on next render
+        tile.justSpawned = false;
+        tile.mergedFrom = null; // Important: clear mergedFrom after rendering the merge animation
+      });
+      // Scroll app content to top on render if needed
+      appEl.scrollTop = 0;
+    }
+
+    function lineIndices(dir, line){
+      if(dir === "left"){
+        return line;
+      }else if(dir === "right"){
+        return line.slice().reverse();
+      }else if(dir === "up"){
+        return line;
+      }else{ // down
+        return line.slice().reverse();
+      }
+    }
+
+    function getLines(dir){
+      const lines = [];
+      if(dir === "left" || dir === "right"){
+        for(let r=0;r<SIZE;r++){
+          const line = [];
+          for(let c=0;c<SIZE;c++) line.push(index(r,c));
+          lines.push(line);
+        }
+      }else{ // up or down
+        for(let c=0;c<SIZE;c++){
+          const line = [];
+          for(let r=0;r<SIZE;r++) line.push(index(r,c));
+          lines.push(line);
+        }
+      }
+      return lines;
+    }
+
+    function move(dir){
+      // Store current state for undo
+      const prev = {
+        tiles: cloneTiles(tiles),
+        score: score,
+        moves: moves,
+        nextId: nextId
+      };
+
+      let moved = false;
+      let gained = 0;
+      const newTiles = emptyTiles(); // Array to build the next state of tiles
+
+      const lines = getLines(dir); // Get rows or columns based on direction
+
+      lines.forEach(line => {
+        // Extract existing tiles from the current line
+        const extracted = line
+          .map(i => tiles[i])
+          .filter(Boolean) // Remove nulls (empty cells)
+          .map(t => ({...t, justSpawned:false})); // Reset spawn flag for moving tiles
+
+        const ordered = (dir === "right" || dir === "down") ? extracted.reverse() : extracted;
+        const mergedThisLine = []; // Tiles after merging
+
+        // Process merges for the current line
+        for(let i=0; i < ordered.length; i++){
+          const current = ordered[i];
+          const next = ordered[i+1]; // Check the next tile in the ordered sequence
+
+          if(next && current.value === next.value){
+            // Merge: Create a new tile with doubled value
+            mergedThisLine.push({
+              id: nextId++,
+              value: current.value * 2,
+              mergedFrom: [current.id, next.id], // Store IDs of merged tiles for animation
+              justSpawned: false // This is a merged tile, not newly spawned
+            });
+            gained += current.value * 2; // Add to score
+            i++; // Skip the next tile as it has been merged
+          }else{
+            // No merge: Keep the current tile as is, clear merge info if it existed
+            mergedThisLine.push({...current, mergedFrom:null});
+          }
+        }
+
+        // Pad with nulls if the line is not full
+        while(mergedThisLine.length < SIZE) mergedThisLine.push(null);
+
+        // Order the merged tiles back according to the direction
+        const finalOrder = (dir === "right" || dir === "down") ? mergedThisLine.reverse() : mergedThisLine;
+
+        // Place the processed tiles back into the newTiles array
+        finalOrder.forEach((tile, pos) => {
+          const idx = line[pos]; // Get the original index in the flat tiles array
+          if(tile){
+            newTiles[idx] = tile;
+            const oldTile = tiles[idx];
+            // Check if any tile actually moved or changed value
+            if(!oldTile || oldTile.id !== tile.id || oldTile.value !== tile.value) {
+              moved = true;
+            }
+          } else if(tiles[idx]) {
+            // If a cell becomes empty, it means something moved
+            moved = true;
+          }
+        });
+      });
+
+      // If no tiles moved, do nothing
+      if(!moved) return false;
+
+      // Add current state to history for undo
+      history.push(prev);
+      if(history.length > 30) history.shift(); // Limit history size
+
+      tiles = newTiles; // Update the main tiles array
+      score += gained;
+      moves += 1;
+
+      // Add a new random tile after the move
+      if(addRandomTile()){
+        // Success! Save game state and render
+        saveGame();
+        render();
+        playTone(520, 0.05, "sine"); // Sound for move
+        if(gained) setTimeout(() => playTone(760, 0.07, "triangle"), 40); // Sound for score gain
+      }
+
+      // Check for game over condition after move
+      if(checkGameOver()){
+      }
+      return true; // Indicate that a move was made
+    }
+
+    function checkGameOver(){
+      if(tiles.some(t => !t)) return false; // If there's an empty cell, game isn't over
+
+      // Check for possible merges
+      for(let i=0; i < tiles.length; i++){
+        const r = Math.floor(i / SIZE);
+        const c = i % SIZE;
+        const v = tiles[i].value;
+
+        // Check right neighbor
+        if(c < SIZE - 1 && tiles[index(r, c + 1)]?.value === v) return false;
+        // Check bottom neighbor
+        if(r < SIZE - 1 && tiles[index(r + 1, c)]?.value === v) return false;
+      }
+      return true; // No empty cells and no possible merges
+    }
+
+    function undo(){
+      const last = history.pop();
+      if(!last){
+        return;
+      }
+      tiles = cloneTiles(last.tiles); // Restore tiles state
+      score = last.score;
+      moves = last.moves;
+      nextId = last.nextId;
+      saveGame(); // Save the restored state
+      render(); // Re-render the game state
+      playTone(220, 0.06, "sawtooth"); // Sound for undo
+    }
+
+    function restartGame(){
+      setInitialGame();
+      playTone(330, 0.08, "triangle"); // Sound for restart
+    }
+
+    function handleKey(e){
+      const key = e.key.toLowerCase();
+      const map = {
+        arrowleft:"left", a:"left",
+        arrowright:"right", d:"right",
+        arrowup:"up", w:"up",
+        arrowdown:"down", s:"down"
+      };
+      if(map[key]){
+        e.preventDefault(); // Prevent default browser action (like scrolling)
+        move(map[key]);
+      }else if(key === "r"){
+        restartGame();
+      }else if(key === "z"){
+        undo();
+      }else if(key === "h"){
+        helpOverlay.classList.add("show");
+      }else if(key === "escape"){ // Close modals with Escape key
+        helpOverlay.classList.remove("show");
+        settingsOverlay.classList.remove("show");
+      }
+    }
+
+    // Touch event handling for mobile swipe
+    let touchStartX = 0, touchStartY = 0;
+
+    boardEl.addEventListener("touchstart", (e) => {
+      const t = e.touches[0];
+      touchStartX = t.clientX;
+      touchStartY = t.clientY;
+      // Prevent page scroll if touch starts ON the board itself
+      if (e.target.closest('#board')) {
+          e.preventDefault(); // Prevent default scroll behavior for the entire page
+      }
+    }, {passive:false}); // passive:false is needed to allow preventDefault
+
+    boardEl.addEventListener("touchend", (e) => {
+      const t = e.changedTouches[0];
+      const dx = t.clientX - touchStartX;
+      const dy = t.clientY - touchStartY;
+      const absX = Math.abs(dx);
+      const absY = Math.abs(dy);
+      const threshold = 40; // Minimum distance to register a swipe
+
+      if(Math.max(absX, absY) < threshold) return; // Ignore small movements
+
+      if(absX > absY) move(dx > 0 ? "right" : "left");
+      else move(dy > 0 ? "down" : "up");
+    });
+
+    boardEl.addEventListener("touchmove", (e) => {
+      // Prevent scroll while swiping ON the board element itself
+      if (e.target.closest('#board')) {
+        e.preventDefault();
+      }
+    }, {passive:false});
+
+    // Button event listeners
+    restartBtn.addEventListener("click", restartGame);
+    undoBtn.addEventListener("click", undo);
+    helpBtn.addEventListener("click", () => helpOverlay.classList.add("show"));
+    settingsBtn.addEventListener("click", () => settingsOverlay.classList.add("show"));
+    closeHelpBtn.addEventListener("click", () => helpOverlay.classList.remove("show"));
+    closeSettingsBtn.addEventListener("click", () => settingsOverlay.classList.remove("show"));
+
+    // Settings toggles
+    themeToggle.addEventListener("click", () => {
+      settings.theme = settings.theme === "dark" ? "light" : "dark";
+      saveSettings();
+    });
+
+    soundToggle.addEventListener("click", () => {
+      settings.sound = !settings.sound;
+      saveSettings();
+      if(settings.sound) playTone(440, 0.06); // Play a sound to confirm
+    });
+
+    showHelpToggle.addEventListener("click", () => {
+      settings.showHelpOnStart = !settings.showHelpOnStart;
+      saveSettings();
+    });
+
+    document.addEventListener("keydown", handleKey); // Global key listener
+
+    // Particle background generation
+    function createParticles(){
+      const container = document.getElementById("particles");
+      if (!container) return;
+      const numParticles = 25; // Slightly more particles for better effect
+      for(let i=0; i < numParticles; i++){
+        const p = document.createElement("div");
+        p.className = "particle";
+        const size = 4 + Math.random() * 10;
+        p.style.width = size + "px";
+        p.style.height = size + "px";
+        p.style.left = Math.random() * 100 + "vw";
+        p.style.bottom = (-20 - Math.random()*80) + "px";
+        p.style.animationDuration = (10 + Math.random()*12) + "s";
+        p.style.animationDelay = (-Math.random()*12) + "s";
+        container.appendChild(p);
+      }
+    }
+
+    // Initial setup
+    if(settings.showHelpOnStart){
+      setTimeout(() => helpOverlay.classList.add("show"), 400); // Show help after a short delay
+    }
+
+    createParticles(); // Create the background particles
+    loadGame(); // Load saved game state or start a new one
+  </script>
+</body>
+</html>
