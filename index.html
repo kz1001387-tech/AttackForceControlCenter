@@ -2,7 +2,8 @@
 <html lang="fa" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#ffca28" />
   <title>AttackForceControlCenter</title>
 
   <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
@@ -11,54 +12,42 @@
     :root{
       --bg1:#fffde7;
       --bg2:#fff4c7;
-
       --surface-rgb:255,255,255;
       --surface-alpha:.58;
       --surface-strong:#ffffff;
-
       --text:#1f1f1f;
       --muted:#5f5f5f;
-
       --gold:#ffc107;
       --gold-2:#ffb300;
-
       --border-alpha:.24;
       --shadow-alpha:.12;
-
       --grid-opacity:.65;
       --grid-line-alpha:.10;
-
       --chip:rgba(255,255,255,.55);
-
       --heroGlowAlpha:.16;
       --glowShadow:0 0 28px rgba(255,193,7,.16);
       --glassBlur:18px;
       --cardRadius:28px;
       --cardHoverBg:#ffffff;
+      --content-max:1200px;
+      --side-pad:24px;
     }
 
     [data-theme="dark"]{
       --bg1:#090b12;
       --bg2:#111827;
-
       --surface-rgb:20,24,35;
       --surface-alpha:.58;
       --surface-strong:#131826;
-
       --text:#f6f7fb;
       --muted:#c7cbe0;
-
       --gold:#ffd54f;
       --gold-2:#ffca28;
-
       --border-alpha:.20;
       --shadow-alpha:.10;
-
       --grid-opacity:.55;
       --grid-line-alpha:.12;
-
       --chip:rgba(255,255,255,.06);
-
       --heroGlowAlpha:.12;
       --glowShadow:0 0 28px rgba(255,213,79,.14);
       --glassBlur:18px;
@@ -74,6 +63,47 @@
 
     html{
       scroll-behavior:smooth;
+      -webkit-text-size-adjust:100%;
+      text-size-adjust:100%;
+    }
+
+    /* ============== LOADER (تیره) ============== */
+    .loader {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at top, #0b0f1a, #111827);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      transition: opacity .7s ease, visibility .7s ease;
+    }
+
+    .loader.hidden {
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    .spinner {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      border: 4px solid rgba(255,213,79,.25);
+      border-top: 4px solid #ffca28;
+      animation: spin 1s linear infinite;
+      box-shadow: 0 0 25px rgba(255,213,79,.4);
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loader h2 {
+      margin-top: 20px;
+      font-size: 1.12rem;
+      color: #f6f7fb;
+      font-weight: 500;
     }
 
     body{
@@ -151,12 +181,17 @@
       display:flex;
       justify-content:space-between;
       align-items:center;
+      gap:12px;
       z-index:20;
       pointer-events:none;
     }
 
-    .brand-mini{
+    .brand-mini,
+    .settings-btn{
       pointer-events:auto;
+    }
+
+    .brand-mini{
       display:flex;
       align-items:center;
       gap:10px;
@@ -168,6 +203,13 @@
       box-shadow:0 16px 40px rgba(255,193,7,var(--shadow-alpha));
       color:var(--text);
       font-weight:700;
+      max-width:min(100%, 360px);
+    }
+
+    .brand-mini span:last-child{
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
     }
 
     .brand-dot{
@@ -176,10 +218,10 @@
       border-radius:50%;
       background:var(--gold);
       box-shadow:var(--glowShadow);
+      flex:0 0 auto;
     }
 
     .settings-btn{
-      pointer-events:auto;
       width:48px;
       height:48px;
       border:none;
@@ -192,6 +234,7 @@
       color:var(--text);
       font-size:1.15rem;
       transition:.25s ease;
+      flex:0 0 auto;
     }
 
     .settings-btn:hover{
@@ -203,7 +246,7 @@
       position:fixed;
       top:78px;
       left:18px;
-      width:min(340px, calc(100vw - 36px));
+      width:min(360px, calc(100vw - 36px));
       border-radius:24px;
       background:rgba(255,255,255,.72);
       border:1px solid rgba(255,193,7,.22);
@@ -305,6 +348,16 @@
       transform:translateX(24px);
     }
 
+    main{
+      width:100%;
+    }
+
+    .container{
+      max-width:var(--content-max);
+      margin:0 auto;
+      padding:0 var(--side-pad);
+    }
+
     .hero{
       max-width:1200px;
       margin:auto;
@@ -324,6 +377,11 @@
       margin-bottom:22px;
       font-weight:700;
       box-shadow:0 16px 40px rgba(255,193,7,var(--shadow-alpha));
+      max-width:100%;
+    }
+
+    .badge span:last-child{
+      white-space:nowrap;
     }
 
     .badge .pulse{
@@ -333,6 +391,7 @@
       background:var(--gold);
       box-shadow:0 0 0 0 rgba(255,193,7,.55);
       animation:pulse 2s infinite;
+      flex:0 0 auto;
     }
 
     @keyframes pulse{
@@ -342,7 +401,7 @@
     }
 
     .hero h1{
-      font-size:clamp(2.6rem, 6vw, 4.4rem);
+      font-size:clamp(2.2rem, 6vw, 4.4rem);
       font-weight:900;
       color:var(--gold-2);
       text-shadow:
@@ -350,12 +409,13 @@
         var(--glowShadow);
       letter-spacing:.3px;
       line-height:1.1;
+      word-break:break-word;
     }
 
     .hero h1::after{
       content:'';
       display:block;
-      width:190px;
+      width:min(190px, 60vw);
       height:5px;
       margin:18px auto 0;
       border-radius:999px;
@@ -392,6 +452,9 @@
       display:inline-flex;
       align-items:center;
       gap:10px;
+      min-height:48px;
+      justify-content:center;
+      text-align:center;
     }
 
     .btn-primary{
@@ -447,6 +510,7 @@
       color:var(--text);
       font-size:.92rem;
       font-weight:700;
+      white-space:nowrap;
     }
 
     .stats{
@@ -492,6 +556,7 @@
       font-size:clamp(1.8rem, 3vw, 2.4rem);
       color:var(--gold-2);
       text-shadow:0 0 15px rgba(255,193,7,.16);
+      padding:0 20px;
     }
 
     .section-sub{
@@ -507,7 +572,7 @@
       max-width:1200px;
       margin:auto;
       display:grid;
-      grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+      grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
       gap:25px;
       padding:0 25px 70px;
     }
@@ -675,6 +740,7 @@
       box-shadow:0 12px 24px rgba(255,193,7,.18);
       transition:.25s ease;
       flex:0 0 auto;
+      min-height:46px;
     }
 
     .copy-btn:hover{
@@ -756,6 +822,7 @@
       padding:36px 20px 48px;
       color:var(--muted);
       border-top:1px solid rgba(255,193,7,.12);
+      margin-top:10px;
     }
 
     .float-orb{
@@ -787,21 +854,15 @@
     }
 
     @media (max-width: 768px){
-      .hero{
-        padding-top:92px;
+      :root{
+        --side-pad:16px;
+        --cardRadius:22px;
       }
 
-      .hero p{
-        font-size:.96rem;
-        line-height:2.05;
-      }
-
-      .section-title{
-        margin-top:72px;
-      }
-
-      .cards{
-        grid-template-columns:1fr;
+      body::before,
+      body::after,
+      .float-orb{
+        opacity:.18;
       }
 
       .topbar{
@@ -811,18 +872,133 @@
       }
 
       .brand-mini{
-        font-size:.92rem;
+        padding:9px 12px;
+        font-size:.9rem;
+        max-width:calc(100vw - 80px);
+      }
+
+      .settings-btn{
+        width:44px;
+        height:44px;
+        font-size:1rem;
       }
 
       .settings-panel{
-        top:72px;
+        top:68px;
         left:12px;
         width:calc(100vw - 24px);
+        max-height:calc(100vh - 88px);
+        overflow:auto;
+      }
+
+      .hero{
+        padding:92px 16px 42px;
+      }
+
+      .hero p{
+        font-size:.96rem;
+        line-height:2.05;
+      }
+
+      .badge{
+        padding:9px 14px;
+        font-size:.88rem;
+      }
+
+      .badge span:last-child{
+        white-space:normal;
+      }
+
+      .section-title{
+        margin-top:68px;
+      }
+
+      .info-strip,
+      .stats,
+      .cards,
+      .bottom-panel{
+        padding-left:16px;
+        padding-right:16px;
+      }
+
+      .cards{
+        grid-template-columns:1fr;
+      }
+
+      .card{
+        padding:22px;
+      }
+
+      .card h3{
+        font-size:1.35rem;
+      }
+
+      .server-head{
+        align-items:stretch;
+      }
+
+      .copy-btn{
+        width:100%;
+      }
+
+      .server-title h3{
+        font-size:1.05rem;
+      }
+
+      .server-link{
+        font-size:.92rem;
+        line-height:1.75;
+      }
+
+      .footer{
+        padding-bottom:38px;
+      }
+    }
+
+    @media (max-width: 520px){
+      .hero h1{
+        font-size:clamp(1.9rem, 10vw, 3rem);
+      }
+
+      .hero-actions{
+        flex-direction:column;
+        align-items:stretch;
+      }
+
+      .btn{
+        width:100%;
       }
 
       .info-card{
-        justify-content:center;
+        padding:16px;
+      }
+
+      .info-chip{
+        width:100%;
         text-align:center;
+      }
+
+      .stat-box{
+        padding:20px 16px;
+      }
+
+      .stat-box h2{
+        font-size:1.7rem;
+      }
+
+      .bottom-panel-inner{
+        padding:16px;
+        border-radius:22px;
+      }
+
+      .server-box{
+        padding:12px;
+      }
+    }
+
+    @media (min-width: 1200px){
+      .hero{
+        padding-top:118px;
       }
     }
 
@@ -837,7 +1013,14 @@
     }
   </style>
 </head>
-<body data-theme="light">
+<body data-theme="dark">
+
+  <!-- ============== LOADER (تیره) ============== -->
+  <div class="loader" id="loader">
+    <div class="spinner"></div>
+    <h2>در حال بارگذاری</h2>
+  </div>
+
   <div class="grid-bg"></div>
   <div class="scanlines"></div>
 
@@ -863,7 +1046,7 @@
         <small>ظاهر تیره با همان حس نئونی</small>
       </div>
       <label class="switch">
-        <input type="checkbox" id="themeToggle">
+        <input type="checkbox" id="themeToggle" checked>
         <span class="slider"></span>
       </label>
     </div>
@@ -1022,6 +1205,31 @@
   </main>
 
   <script>
+    // ============== LOADER ==============
+    const loader = document.getElementById("loader");
+    window.addEventListener("load", () => {
+      setTimeout(() => {
+        loader.classList.add("hidden");
+      }, 900);
+    });
+
+    // ============== Safe localStorage (رفع خطای SecurityError) ==============
+    function safeLocalStorageGet(key, defaultValue) {
+      try {
+        const value = localStorage.getItem(key);
+        return value !== null ? value : defaultValue;
+      } catch (e) {
+        return defaultValue;
+      }
+    }
+
+    function safeLocalStorageSet(key, value) {
+      try {
+        localStorage.setItem(key, value);
+      } catch (e) {}
+    }
+
+    // ============== بقیه کد اصلی (بدون تغییر) ==============
     const body = document.body;
     const settingsBtn = document.getElementById('settingsBtn');
     const settingsPanel = document.getElementById('settingsPanel');
@@ -1038,17 +1246,18 @@
     function applyTheme(theme){
       body.setAttribute('data-theme', theme);
       themeToggle.checked = theme === 'dark';
-      localStorage.setItem('afcc-theme', theme);
+      safeLocalStorageSet('afcc-theme', theme);
     }
 
     function applyGrid(enabled){
       gridBg.style.display = enabled ? 'block' : 'none';
       scanlines.style.display = enabled ? 'block' : 'none';
       gridToggle.checked = enabled;
-      localStorage.setItem('afcc-grid', enabled ? '1' : '0');
+      safeLocalStorageSet('afcc-grid', enabled ? '1' : '0');
     }
 
-    settingsBtn.addEventListener('click', () => {
+    settingsBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
       settingsPanel.classList.toggle('open');
     });
 
@@ -1061,13 +1270,17 @@
     });
 
     themeQuickBtn.addEventListener('click', () => {
-      const current = body.getAttribute('data-theme') || 'light';
+      const current = body.getAttribute('data-theme') || 'dark';
       applyTheme(current === 'light' ? 'dark' : 'light');
     });
 
     document.addEventListener('click', (e) => {
       const clickedInside = settingsPanel.contains(e.target) || settingsBtn.contains(e.target);
       if (!clickedInside) settingsPanel.classList.remove('open');
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') settingsPanel.classList.remove('open');
     });
 
     copyBtn.addEventListener('click', async () => {
@@ -1098,10 +1311,10 @@
       }
     });
 
-    const savedTheme = localStorage.getItem('afcc-theme');
-    const savedGrid = localStorage.getItem('afcc-grid');
+    const savedTheme = safeLocalStorageGet('afcc-theme', 'dark');
+    const savedGrid = safeLocalStorageGet('afcc-grid', '1');
 
-    applyTheme(savedTheme || (prefersDark ? 'dark' : 'light'));
+    applyTheme(savedTheme);
     applyGrid(savedGrid !== '0');
 
     const observer = new IntersectionObserver((entries) => {
